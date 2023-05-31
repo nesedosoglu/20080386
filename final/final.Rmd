@@ -25,7 +25,7 @@ urlcolor: blue
 fontsize: 12pt
 biblio-style: apalike
 abstract: |
-    Write your abstract here.
+    This paper examines using a linear regression model to predict house prices in the Teruel City dataset. The model estimates their impact on house prices by considering variables such as the number of bedrooms, bathrooms, and property area. The results show that the number of bathrooms positively influences prices, while the number of bedrooms has a negative effect. By applying this model, accurate predictions can be made for new observations, providing valuable insights for stakeholders in the real estate market. These findings highlight the significance of property attributes in predicting house prices and the potential of machine learning techniques to improve efficiency in property valuation.
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache = FALSE, echo = TRUE, message = FALSE, warning = FALSE)
@@ -57,11 +57,134 @@ Teruel City dataset formed with the available house prices in the center of Teru
 
 The Teruel City dataset contains 58 observations and 14 variables. Each variable will be described individually in the following sections. `Flat` : Type of the house is it apartment or individual. It is a categorical value with the values [1, 0]. `Duplex` : Is the property a duplex or not. It is a categorical variable with the values [1, 0].  `Attic` : Does the house contain an attic. It is a categorical variable with the values [1,0]. `Location` : Location of the house. It is a categorical variable with the values [San Julian 8, San Francisco 19, Parra 2, …, san benito]. `Bedrooms` : The number of bedrooms in the house. It is a discrete variable with the values [1, 2, 3, 4, 5, 8]. `Area` : The area of the house. It is a continuous variable with the range of values [42, 259]. `Floor` : The floor number of the house. It is a discrete variable with the values [-1, 0, 1, 2, 3, 4, 8]. `Lift` : Does the house contain a lift. It is a categorical variable with the values [1,0]. `Garage` : Does the house contain a garage. It is a categorical variable with the values [1,0]. `GasHeating` : Does the house contain a gas heating system. It is a categorical variable with the values [1,0]. `RemodeledOrNew` : Is the house new or remodeled. It is a categorical variable with the values [1, 0]. `BoxRoom` : Does the house contain a box room. It is a categorical variable with the values [1,0]. `NumWC` : The number of bathrooms in the house. It is a discrete variable with the values [1, 2, 3]. `PriceThousandsEuros` : The price of the house in EUROS. It is a continuous variable with the range of values [33, 500].
 
+### Data summary statistics
+
+(Table \ref{tab:summary}) summarizes the key statistics derived from our dataset, which comprises information on various housing attributes. The mean area of the houses in the sample is 96.62 square meters, with a standard variation of 40.38, showing moderate variability. The scope of regions is from a minimum of 42.00 square meters to a maximum of 259.00 square meters. In terms of bedrooms, the average count is 2.95, with a standard deviation of 1.26. The range ranges from a minimum of 1 bedroom to 8 bedrooms. The average floor level of the houses is 2.33, with a standard deviation of 1.47. The range includes negative values (-1.00) indicating basement or underground floors, up to a maximum of 8 floors. The number of bathrooms (NumWC) averages 1.38, with a standard deviation 0.59. The range varies from a minimum of 1 bathroom to a maximum of 3 bathrooms. Lastly, the average price of the houses in thousands of euros is 118.10, with a standard variation of 71.57. The price scope is from a minimum of 33.00 thousand euros to a maximum of 500.00 thousand euros.
+
+```{r code_chunk_name, echo = FALSE}
+library(tidyverse)
+library(here)
+survey <- read_csv(here("data/Teruel City (TC).csv"))
+```
+
+
+```{r, echo=FALSE}
+library(xtable)
+library(summarytools)
+st_options(lang = "en")
+```
+
+
+```{r results='asis', echo=FALSE}
+survey %>%
+  select("PriceThousandsEuros", "Bedrooms", "NumWC", "Area", "Floor") %>%
+  descr(stats = c("mean", "sd", "min", "med", "max"), transpose = TRUE) %>%
+  xtable(caption = "Summary Statistics",
+         label = "tab:summary",
+         align = c("l", "c", "c", "c", "c", "c")) %>%
+  print(booktabs = TRUE, comment = FALSE, caption.placement = "top")
+```
+
+# Methods and Data Analysis
+
+## Exploratory Data Analysis 
+
+(Figure \@ref(fig:lift)) visually illustrates the dataset's distribution of houses with and without a lift. It provides a quick outline of the count of houses falling into each category, highlighting the prevalence of lift presence. This plot helps identify patterns and trends connected to lift availability in houses.
+
+```{r lift, fig.align='center', fig.cap='Lift Presence', results='asis', echo=FALSE}
+# Load the dataset
+dataset <- read.csv("C:/Users/lenovo/OneDrive/Masaüstü/20080386/data/Teruel City (TC).csv")
+
+barplot(table(dataset$Lift), xlab = "Lift", ylab = "Count", main = "Bar Plot: Lift Presence")
+```
+
+## Predictor Variable Analysis: Identifying Key Factors Influencing House Prices
+
+In this section, we conducted a predictor variable analysis (Figure \@ref(fig:predictor)) to identify the key factors influencing house prices. To investigate this, we utilized multiple linear regression with the dataset on Teruel City properties. The predictor variables considered in the analysis were the number of bedrooms (Bedrooms), the area of the property (Area), and the number of bathrooms (NumWC). (Figure \@ref(fig:predictor))
+
+The outcomes of the multiple linear regression revealed the coefficients associated with each predictor variable, showing their impact on house prices. Among the variables considered, the number of bathrooms (NumWC) emerged as the most significant factor, with a coefficient of 40. This suggests that an increase in the number of bathrooms is associated with a significant positive effect on house prices. On the other hand, the area of the property (Area) showed a coefficient of 10, indicating a positive but reasonably minor impact. Interestingly, the number of bedrooms (Bedrooms) showed a negative coefficient of -30, meaning that an increase in the number of bedrooms is associated with a decrease in house prices.
+
+We created a scatter plot (Figure \@ref(fig:numwc)) to visualize the relationship between house prices and the number of bathrooms (NumWC). The plot shows the distribution of data points, along with a fitted smooth line that helps visualize the trend. As pictured in the plot, there is a positive correlation between house prices and the number of bathrooms, further supporting the finding from the regression analysis. 
+```{r predictor, fig.align='center', fig.cap='Predictor Variables', results='asis', echo=FALSE}
+# Load the dataset
+dataset <- read.csv("C:/Users/lenovo/OneDrive/Masaüstü/20080386/data/Teruel City (TC).csv")
+
+# Perform multiple linear regression
+model <- lm(PriceThousandsEuros ~ Bedrooms + Area + NumWC, data = dataset)
+
+
+# Create a bar plot of regression coefficients
+coefficients <- coef(model)
+predictor_names <- c("Bedrooms", "Area", "NumWC")
+coefficients_df <- data.frame(Predictor = predictor_names, Coefficient = coefficients[-1])
+
+# Sort the coefficients by magnitude
+coefficients_df <- coefficients_df[order(abs(coefficients_df$Coefficient), decreasing = TRUE), ]
+
+# Create the bar plot
+barplot(coefficients_df$Coefficient, names.arg = coefficients_df$Predictor,
+        xlab = "Predictor Variables", ylab = "Coefficient",
+        main = "Factors Affecting House Prices", col = "steelblue")
+
+# Add a horizontal line at zero for reference
+abline(h = 0, col = "red", lty = 2)
+```
+```{r numwc, fig.align='center', fig.cap='Scatter Plot: NumWC VS. PriceThousandsEuros', results='asis', echo=FALSE}
+survey %>%
+  ggplot(aes(x = PriceThousandsEuros, y = NumWC)) +
+  geom_point() +
+  geom_smooth() +
+  scale_x_continuous("PriceThousandsEuros") +
+  scale_y_continuous("NumWC")
+```
+
+## Prediction
+
+We employed a linear regression model to predict house prices in the Teruel City (TC) dataset, taking into account the independent variables Bedrooms (X1), NumWC (X2), and Area (X3). The model can be represented as follows:
+
+\[ PriceThousandsEuros = \beta_0 + \beta_1Bedrooms + \beta_2NumW + \beta_3Area + \varepsilon \]
 
 
 
+In this equation, PriceThousandsEuros represents the predicted house prices, and \( \beta_0 \) is constaint value and \( \beta_1, \beta_2, \beta_3\) are the estimated coefficients associated with each independent variable and \( \varepsilon \) represents the error term.. These coefficients indicate the magnitude and direction of the impact that each variable has on the predicted house prices.
+
+By fitting the linear regression model in R using the Teruel City (TC) dataset, we were able to estimate the values of the coefficients and utilize them to make predictions on new observations.
+
+## Results
+
+We present a line plot (Figure \@ref(fig:predict)) comparing predicted prices and actual prices for houses in Teruel City. This plot shows the relationship between the samples and the corresponding price, where the sample serves as a unique identifier for each house. The green line represent the actual prices, while the magenta line represent the prices predicted by a linear regression model. By visually examining the proximity of the green line to the magenta line, we can assess the model's accuracy in estimating house prices.
+
+```{r predict, fig.align='center', fig.cap='Predicted prices VS. Actual Prices', results='asis', echo=FALSE}
+dataset <- read.csv("C:/Users/lenovo/OneDrive/Masaüstü/20080386/data/Teruel City (TC).csv")
+
+model <- lm(PriceThousandsEuros ~ Bedrooms + NumWC + Area, data = dataset)
+
+
+predictions <- predict(model, dataset)
+
+plot(dataset$PriceThousandsEuros,
+     type = "l", xlab = "Samples", ylab = "Price (Thousands of Euros)",
+     col = "green")
+
+lines(predictions, col = "magenta")
+
+legend("topright", legend = c("Actual", "Predicted"),
+       col = c("green", "magenta"), lty = 1, bty = "n")
+
+
+```
+
+
+
+# Conclusion
+
+In conclusion, this academic paper explored using a linear regression model to predict house prices in the Teruel City dataset. By considering independent variables such as the number of bedrooms, number of bathrooms, and area of the property, the model aimed to estimate the impact of these factors on house prices.
+
+The results showed that the number of bathrooms had the most significant positive effect on house prices, indicating an increase associated with higher prices. On the other hand, the number of bedrooms harmed house prices, suggesting that an increase led to decreased prices.
+We can predict new observations by fitting the linear regression model in R and estimating the coefficients. This approach provides valuable insights for various stakeholders in the real estate market, including homebuyers, sellers, lenders, and real estate agents.
+
+Overall, the findings highlight the importance of considering specific property attributes when predicting house prices. Automated prediction systems can offer more objective and accurate property valuations by leveraging machine learning techniques and analyzing relevant data, facilitating informed real estate industry decision-making.
 
 \newpage
 # References {#references}
 <div id="refs"></div>
-
